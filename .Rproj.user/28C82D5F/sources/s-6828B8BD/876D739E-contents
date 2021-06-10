@@ -1,0 +1,68 @@
+# load reciured library
+library(tidyverse)
+
+# read the data
+applications = read_csv("Amplification.csv")
+
+# take the first 10 obserbation of each image size
+training_dataset = applications %>% 
+  group_by(Image_Height) %>% 
+  slice_head(n=10)
+
+#average data-set of the First 10 of Each image size
+avg_dataset = applications %>% .[,2:12] %>% 
+  group_by(Image_Height) %>% 
+  slice_head(n=10) %>% summarise_all(.funs = mean)
+
+# tes_dataset
+test_dataset = applications %>%
+  group_by(Image_Height) %>%
+  slice(-(1:10))
+
+
+#Regression Analysis
+
+regrestion_model = lm(canny_time ~ Canny_flops + Canny_bytes, training_dataset)
+alias(regrestion_model)
+
+?cor
+library(corrr)
+
+corr(training_dataset$canny_time, training_dataset$Canny_flops, training_dataset$Canny_bytes)
+
+cor(training_dataset)
+
+#get a summary of the model
+summary(regrestion_model)
+corr(training_dataset$canny_time, training_dataset$Canny_flops + training_dataset$Canny_bytes )
+
+r <- cor.test(training_dataset$canny_time, training_dataset$Canny_flops + training_dataset$Canny_bytes ) %>% .$conf.int
+
+#interaction term
+round(coef(regrestion_model,2))
+
+exe_timePredict = predict(regres, newdata = test_dataset)
+
+print(data.frame(canny_time = test_dataset$canny_time, prediction_time = exe_timePredict))
+
+library(psych)
+describe(applications) 
+
+aggregate(applications$canny_time~applications$horizontal_time , data= applications, mean)
+
+summary = applications %>%
+  group_by(Image_Height)  %>% 
+  select( canny_time,  vertical_time, horizontal_time)    %>%  describe()
+
+summary(applications)
+print(summary)
+#Graph View
+
+library(ggplot2)
+ggplot() +
+  geom_point(aes(x = training_dataset$Canny_flops + training_dataset$Canny_bytes, y = training_dataset$canny_time), colour = 'green') +
+  geom_point(aes(x = test_dataset$Canny_flops + training_dataset$Canny_bytes, y = test_dataset$canny_time), colour = 'red') +
+  geom_line(aes(x = training_dataset$Canny_flops + training_dataset$Canny_bytes, y = predict(regres, newdata = training_dataset)), colour = 'blue') +
+  ggtitle('Canny_time vs Canny_flops & Canny_bytes (Green: Training Set, Red: Test Set)') +
+  xlab('Canny_flops & Canny_bytes') +
+  ylab('Canny_time')
